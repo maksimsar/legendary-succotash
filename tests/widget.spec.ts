@@ -1,34 +1,46 @@
 import { test, expect } from '@playwright/test';
-import {WidgetPage} from "./widget.page";
+import { WidgetPage } from './widget.page';
 
-test.describe('Uchi.ru widget ', () => {
-  let widgetPage: WidgetPage;
-
-  test.beforeEach(async ({page}) => {
-    widgetPage = new WidgetPage(page);
-
-    // open uchi.ru main page
+test.describe('Uchi.ru widget', () => {
+  test.beforeEach(async ({ page }) => {
     await page.goto('/');
 
-    // close cookies popup
-    await page.click('._UCHI_COOKIE__button');
+    const acceptCookies = page
+      .getByText('ОК', { exact: true })
+      .and(page.locator(':visible'));
+    await acceptCookies.click();
+    await expect(acceptCookies).toBeHidden();
   });
 
-  test('opens', async ({page}) => {
+  test('opens', async ({ page }) => {
+    const widgetPage = new WidgetPage(page);
+
     await widgetPage.openWidget();
 
-    await expect(widgetPage.getWidgetBody()).toBeVisible()
+    await expect(widgetPage.body).toBeVisible();
   });
 
   test('has correct title', async ({ page }) => {
+    const widgetPage = new WidgetPage(page);
+
     await widgetPage.openWidget();
-
-    const articles = await widgetPage.getPopularArticles();
-
-    await articles[0].click();
-
+    await widgetPage.openFirstPopularArticle();
     await widgetPage.clickWriteToUs();
 
-    expect(await widgetPage.getTitle()).toEqual('Связь с поддержкой');
+    await expect(widgetPage.heading).toHaveText('Связь с поддержкой');
+  });
+
+  test('returns to popular articles from an article', async ({ page }) => {
+    const widgetPage = new WidgetPage(page);
+
+    await widgetPage.openWidget();
+    await widgetPage.openFirstPopularArticle();
+    await expect(widgetPage.writeToUsButton).toBeVisible();
+
+    await widgetPage.goBack();
+
+    await expect(widgetPage.popularArticles.first()).toBeVisible();
+    await expect(widgetPage.allArticlesButton).toBeVisible();
+    await expect(widgetPage.writeToUsButton).toBeHidden();
   });
 });

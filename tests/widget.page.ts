@@ -1,43 +1,41 @@
-import {Page} from "@playwright/test";
-
-enum WidgetPageSelectors {
-    WRAPPER = '.sc-dino-typography-h > [class^=widget__]',
-    WIDGET_BODY = '[class^=widgetWrapper] > [class^=widget__]',
-    HEADER_TEXT = 'header h5',
-    BUTTON_OPEN = '[data-test=openWidget]',
-    BUTTON_WRITE_TO_US = '[class^=btn]',
-    ARTICLE_POPULAR_TITLE = '[class^=popularTitle__]',
-    ARTICLE_POPULAR_LIST = `${ARTICLE_POPULAR_TITLE} + ul[class^=articles__]`,
-    ARTICLE_POPULAR_LIST_ITEM = `${ARTICLE_POPULAR_LIST} > li`,
-}
+import type { Locator, Page } from '@playwright/test';
 
 export class WidgetPage {
-    static selector = WidgetPageSelectors;
+  readonly body: Locator;
+  readonly heading: Locator;
+  readonly popularArticles: Locator;
+  readonly writeToUsButton: Locator;
+  readonly allArticlesButton: Locator;
 
-    constructor(protected page: Page) {}
+  private readonly openButton: Locator;
+  private readonly backButton: Locator;
 
-    wrapper() {
-        return this.page.locator(WidgetPage.selector.WRAPPER)
-    }
+  constructor(page: Page) {
+    this.body = page.locator('div:has(> header [data-test="button_close"])');
+    this.heading = this.body.getByRole('banner').getByRole('heading');
+    this.popularArticles = this.body
+      .getByText('Популярные статьи', { exact: true })
+      .locator('+ ul')
+      .getByTestId('article-list-item');
+    this.writeToUsButton = this.body.locator('[data-test="button_feedback_form"]');
+    this.allArticlesButton = this.body.locator('[data-test="button_all_articles"]');
+    this.openButton = page.locator('[data-test="openWidget"]');
+    this.backButton = this.body.locator('[data-test="button_back"]');
+  }
 
-    async openWidget() {
-        return this.wrapper().locator(WidgetPage.selector.BUTTON_OPEN).click();
-    }
+  async openWidget(): Promise<void> {
+    await this.openButton.click();
+  }
 
-    async getPopularArticles() {
-        return this.wrapper().locator(WidgetPage.selector.ARTICLE_POPULAR_LIST_ITEM).all()
-    }
+  async openFirstPopularArticle(): Promise<void> {
+    await this.popularArticles.first().click();
+  }
 
-    async clickWriteToUs() {
-        return this.wrapper().locator(WidgetPage.selector.BUTTON_WRITE_TO_US).click();
-    }
+  async clickWriteToUs(): Promise<void> {
+    await this.writeToUsButton.click();
+  }
 
-    async getTitle() {
-        return this.wrapper().locator(WidgetPage.selector.HEADER_TEXT).textContent();
-    }
-
-    getWidgetBody() {
-        return this.page.locator(WidgetPage.selector.WIDGET_BODY);
-    }
+  async goBack(): Promise<void> {
+    await this.backButton.click();
+  }
 }
-
